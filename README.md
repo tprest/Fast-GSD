@@ -39,7 +39,7 @@ q=1024      #Take q to be any integer you want
 print (Generic_NTRU_GSD(A,QQ,q) == A.gram_schmidt());
 
 #Testing the correctness of the integer GSD algorithms
-print (Standard_GS(A) == Dual_GS(A) == Symplectic_GS(A,q) == Integer_NTRU_GSD(A,q) = Optimized_Integer_NTRU_GSD(A,q) );
+print (Standard_GS(A) == Dual_GS(A) == Symplectic_GS(A,q) == Integer_NTRU_GSD(A,q) == Optimized_Integer_NTRU_GSD(A,q) );
 ```
 
 
