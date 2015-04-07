@@ -6,7 +6,7 @@ What is this library?
 =====================
 This software is a proof-of-concept Sage implementation of some of the algorithms described in [LP15]. The article can be found on http://www.di.ens.fr/~lyubash/ and http://www.di.ens.fr/~prest/.
 More particularly, we focus on the Gram-Schmidt Orthogonalization (GSO) and Gram-Schmidt Decomposition (GSD) of NTRU lattices.
-Since we use some clever ideas of [GHN06] to speed up our algorithms by taking advantage of the symplectic structure of NTRU lattices, we also implemented some algorithms from [GHN06].
+Since we use some clever ideas of [GHN06] to speed up our algorithms by taking advantage of the symplectic structure of NTRU lattices, we also implemented the GSD algorithms from [GHN06].
 
 
 What does it contain?
@@ -45,7 +45,7 @@ print (Standard_GS(A) == Dual_GS(A) == Symplectic_GS(A,q) == Integer_NTRU_GSD(A,
 
 Possible improvements
 =====================
-Algorithms Generic_NTRU_GSD and Integer_NTRU_GSD are voluntarily kept as simple as possible. Optimized_Integer_NTRU_GSD is a bit more involved. It is possible to algorithmically speed it up, at the price of clarity. If you are nevertheless interested to do it, you can join me on my email address, which can be found on my website: http://www.di.ens.fr/~prest/
+If you have any suggestion or are interested on improving, adding new functionalities or porting the code, you can join me on my email address, which can be found on my website: http://www.di.ens.fr/~prest/
 
 
 References
