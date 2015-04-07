@@ -24,7 +24,7 @@ The file Isometric_GS.sage contains specialized algorithms from [LP15] for perfo
 
 How do I use it?
 ================
-On a Sage terminal, these commands allow to test the correcness of the GSO/GSD algorithms:
+On a Sage terminal, these commands allow to test the correctness of the GSO/GSD algorithms:
 ```
 %attach NTRU.sage
 %attach GS.sage
