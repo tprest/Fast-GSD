@@ -221,7 +221,11 @@ def Multiple_Dot_Products(a,b,F):
 #Algorithm performing Gram-Schmidt Decomposition over NTRU lattices using the principles of [GHN06] and [LP15].
 #Optimized versions of Algorithms 6,7 of [LP15]. See also section 7 of [LP15].
 #This algorithm performs only exact operations over the ring of integers ZZ
-#This algorithm introduces further optimizations based on the fact that given certain conditions, you can compute n dot products at essentially the cost of one dot product
+#Compared to Integer_NTRU_GSD(), this algorithm introduces further optimizations:
+# - replacing standard division / with .divide_knowing_divisible_by()
+# - maximizing the use of symplecticity to compute for free or avoid using the second half of c, d
+# - using symplecticity to avoid computing the second half of b
+# - using a new procedure Multiple_Dot_Products() to compute multiple dot products at the same time
 def Optimized_Integer_NTRU_GSD(A,q):
     n = A.nrows()//2;
 
@@ -240,31 +244,21 @@ def Optimized_Integer_NTRU_GSD(A,q):
 
 
     for i in [1..n-1]:
-        b[i] = (d[i-1]*NTRU_Rotate(b[i-1],ZZ,1) - c[i-1]*v)/d[i-2];
-        v = (d[i-1]*v - c[i-1]*NTRU_Rotate(b[i-1],ZZ,1))/d[i-2]; 
+        b[i] = d[i-1]*NTRU_Rotate(b[i-1],ZZ,1) - c[i-1]*v;
+        v = d[i-1]*v - c[i-1]*NTRU_Rotate(b[i-1],ZZ,1);
+        for j in range(2*n):
+            b[i,j] = b[i,j].divide_knowing_divisible_by(d[i-2]);
+            v[j] = v[j].divide_knowing_divisible_by(d[i-2]);
         y[n,i] = NTRU_Rotate(A[n],ZZ,1)*v;                   #This is computed now to be used later in the GSD.
-        d[i] = (d[i-1]*d[i-1] - c[i-1]*c[i-1])/d[i-2];
+        d[i] = (d[i-1]*d[i-1] - c[i-1]*c[i-1]).divide_knowing_divisible_by(d[i-2]);
         c[i] = A[0]*NTRU_Rotate(b[i],ZZ,1);
 
 
-    #Using symplecticity (see [GHN06]) to compute the second half of d
+    #Using symplecticity (see [GHN06]) to compute for free the second half of d
     q2 = 1;
     for i in range(n):
         q2 *= (q**2);
         d[n+i] = q2*d[n-2-i];
-
-
-    #Using symplecticity (see [GHN06]) to compute the second half of the GSO
-    for i in range(n):
-        k = q**(2*n-2*i-1);
-        for j in range(n):
-            b[2*n-1-i,2*n-1-j] = k*b[i,j];
-            b[2*n-1-i,j] = -k*b[i,2*n-1-j];
-
-
-    #Can be computed faster (see Generic_NTRU_GSD)
-    for i in range(n-1):
-        c[n+i] = (b[n]*NTRU_Rotate(b[n+i],ZZ,1))/d[n-1];
 
 
     #We fill the diagonal of xx:
@@ -273,14 +267,15 @@ def Optimized_Integer_NTRU_GSD(A,q):
 
 
     #We fill the upper-left quadrant of xx:
+    #We could avoid to compute one of the two MDP, but it wouldn't change much to the timings
     MDP1 = Multiple_Dot_Products(A[0],A[0],ZZ);
     MDP2 = Multiple_Dot_Products(NTRU_Rotate(A[0],ZZ,1),A[0],ZZ);
-    for i in [1..N-1]:
+    for i in [1..n-1]:
         xx[i,0] = MDP1[i];
         y[i,0] = MDP2[i];
         for j in [1..i-1]:
-            xx[i,j] = (d[j-1]*xx[i-1,j-1] - c[j-1]*y[i-1,j-1])/d[j-2];
-            y[i,j]  = (d[j-1]*y[i  ,j-1] - c[j-1]*xx[i  ,j-1])/d[j-2];
+            xx[i,j] = (d[j-1]*xx[i-1,j-1] - c[j-1]*y[i-1,j-1]).divide_knowing_divisible_by(d[j-2]);
+            y[i,j]  = (d[j-1]*y[i  ,j-1] - c[j-1]*xx[i  ,j-1]).divide_knowing_divisible_by(d[j-2]);
 
 
     #We fill the lower-left quadrant of xx (under its diagonal):
@@ -290,27 +285,34 @@ def Optimized_Integer_NTRU_GSD(A,q):
         xx[i,0] = MDP1[i-n];
         y[i,0] = MDP2[i-n];
         for j in [1..i-n]:
-            xx[i,j] = (d[j-1]*xx[i-1,j-1] - c[j-1]*y[i-1,j-1])/d[j-2];
-            y[i,j]  = (d[j-1]*y[i  ,j-1] - c[j-1]*xx[i  ,j-1])/d[j-2];
+            xx[i,j] = (d[j-1]*xx[i-1,j-1] - c[j-1]*y[i-1,j-1]).divide_knowing_divisible_by(d[j-2]);
+            y[i,j]  = (d[j-1]*y[i  ,j-1] - c[j-1]*xx[i  ,j-1]).divide_knowing_divisible_by(d[j-2]);
 
 
     #We fill the lower-left quadrant of xx (over its diagonal):
     for j in range(n):
         xx[n,j] = A[n]*b[j];
         for i in [n+1..j+n-1]:
-            xx[i,j] = (d[j-1]*xx[i-1,j-1] - c[j-1]*y[i-1,j-1])/d[j-2];
-            y[i,j]  = (d[j-1]*y[i  ,j-1] - c[j-1]*xx[i  ,j-1])/d[j-2];
+            xx[i,j] = (d[j-1]*xx[i-1,j-1] - c[j-1]*y[i-1,j-1]).divide_knowing_divisible_by(d[j-2]);
+            y[i,j]  = (d[j-1]*y[i  ,j-1] - c[j-1]*xx[i  ,j-1]).divide_knowing_divisible_by(d[j-2]);
 
 
-    MDP1 = Multiple_Dot_Products(A[n],b[n],ZZ);
-    MDP2 = Multiple_Dot_Products(NTRU_Rotate(A[n],ZZ,1),b[n],ZZ);
     #We fill the lower-right quadrant of xx:
+    #In addition to using Multiple_Dot_Products, we find a way to avoid having to use the c[j],d[j],b[j] for j>=n
+    #This is done using the symmetries of the GSD of a symplectic matrix
+    Ap = vector(ZZ,2*n);
+    for j in range(n):
+        Ap[2*n-1-j] = A[n,j];
+        Ap[j] = -A[n,2*n-1-j];
+    MDP1 = -q*Multiple_Dot_Products(Ap,b[n-1],ZZ);
+    MDP2 = -q*Multiple_Dot_Products(NTRU_Rotate(Ap,ZZ,1),b[n-1],ZZ);
     for i in [n..2*n-1]:
         xx[i,n] = MDP1[i-n];
         y[i,n] = MDP2[i-n];
+
         for j in [n+1..i-1]:
-            xx[i,j] = (d[j-1]*xx[i-1,j-1] - c[j-1]*y[i-1,j-1])/d[j-2];
-            y[i,j]  = (d[j-1]*y[i  ,j-1] - c[j-1]*xx[i  ,j-1])/d[j-2];
+            xx[i,j] = (q*q*(d[2*n-1-j]*xx[i-1,j-1] - c[2*n-1-j]*y[i-1,j-1])).divide_knowing_divisible_by(d[2*n-j]);
+            y[i,j]  = (q*q*(d[2*n-1-j]*y[i,j-1] - c[2*n-1-j]*xx[i,j-1])).divide_knowing_divisible_by(d[2*n-j]);
 
 
     return xx;
