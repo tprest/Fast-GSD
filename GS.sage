@@ -36,7 +36,7 @@ def Standard_GS(B):
         for j in [2..i]:
             S = Lamb[i,1]*Lamb[j,1];
             for k in [2..j-1]:
-                S = (Lamb[k,k]*S + Lamb[j,k]*Lamb[i,k])/Lamb[k-1,k-1];
+                S = (Lamb[k,k]*S + Lamb[j,k]*Lamb[i,k]).divide_knowing_divisible_by(Lamb[k-1,k-1]);
             Lamb[i,j] = G[i,j]*Lamb[j-1,j-1] - S;
     return Lamb.submatrix(1,1);
 
@@ -60,6 +60,7 @@ def Dual_GS(B):
         li = [1..i-2];
         for j in reversed(li):
             U[j] = -sum(Lamb[k,j]*U[k] for k in [j+1..i])/Lamb[j,j];
+            #Using the .divide_knowing_divisible_by() function doesn't really speed up the former line
         for j in [i..2*n]:
             Lamb[j,i] = sum(G[j-1,k-1]*U[k] for k in [1..i]);
     return Lamb.submatrix(1,1);
@@ -85,6 +86,7 @@ def Symplectic_GS(B,q):
         li = [1..i-2];
         for j in reversed(li):
             U[j] = -sum(Lamb[k,j]*U[k] for k in [j+1..i])/Lamb[j,j];
+            #Using the .divide_knowing_divisible_by() function doesn't really speed up the former line
         for j in [1..i]:
             Lamb[2*n+1-j,2*n+1-i] = qq[n+1-i]*U[j];
         for j in [i..2*n]:
